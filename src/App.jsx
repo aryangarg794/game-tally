@@ -4,13 +4,13 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import './index.css'
 
-
+var intervals = []
+var timeouts = []
+const THRESHOLD = 120
+const GAMETIME = 240
+const GUIDE_PERIOD = 1000 * 30
 
 function App() {
-  const THRESHOLD = 120
-  const GAMETIME = 240
-  const GUIDE_PERIOD = 1000 * 30
-
   const [countPlayer, setCountPlayer] = useState(100)
   const [countGuide, setCountGuide] = useState(100)
   const [showWin, setShowWin] = useState(false)
@@ -18,7 +18,6 @@ function App() {
   const [boolWinPlayer1, setBoolWin1] = useState(false)
   const [boolWinPlayer2, setBoolWin2] = useState(false)
   const [timer, setTimer] = useState(GAMETIME)
-  
 
   function determineWin(exit) {
     switch (exit) {
@@ -47,25 +46,31 @@ function App() {
     }
     setShowWin(true)
     setGameStart(false)
-    
+
+    timeouts.forEach(element => {
+      clearTimeout(element)
+    });
+    timeouts = []
   }
 
   function startTimer() {
     setGameStart(true)
-    setTimeout(determineWin, GAMETIME * 1000, 'timeout')
+    timeouts.push(setTimeout(determineWin, GAMETIME * 1000, 'timeout'))
 
-    const interval = setInterval(() => {
+    intervals.push(setInterval(() => {
       setTimer((timer) => timer -1)
-    }, 1000)
+    }, 1000))
 
-    const intervalGuide = setInterval(() => {
+    intervals.push(setInterval(() => {
       setCountGuide((count) => count - 10)
-    }, GUIDE_PERIOD)
-    
-    setTimeout(() => {
-      clearInterval(interval)
-      clearInterval(intervalGuide)
-    }, GAMETIME * 1000) 
+    }, GUIDE_PERIOD))
+
+    timeouts.push(setTimeout(() => {
+      intervals.forEach(element => {
+        clearInterval(element)
+      });
+      intervals = []
+    }, GAMETIME * 1000))
   }
 
   function reset() {
@@ -76,6 +81,11 @@ function App() {
     setCountPlayer(100)
     setGameStart(false)
     setTimer(GAMETIME)
+
+    intervals.forEach(element => {
+      clearInterval(element)
+    });
+    intervals = []
   }
 
   function getWin(player1win, player2win) {
