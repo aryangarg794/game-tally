@@ -5,10 +5,11 @@ import './App.css'
 import './index.css'
 
 var intervals = []
-var timeouts = []
 const THRESHOLD = 120
-const GAMETIME = 240
-const GUIDE_PERIOD = 1000 * 30
+const GAMETIME = 1
+const GUIDE_PERIOD = 1000 * 15
+var elapsed = GAMETIME
+var pause = false
 
 function App() {
   const [countPlayer, setCountPlayer] = useState(100)
@@ -19,6 +20,7 @@ function App() {
   const [boolWinPlayer2, setBoolWin2] = useState(false)
   const [timer, setTimer] = useState(GAMETIME)
 
+  
   function determineWin(exit) {
     switch (exit) {
       case 'comparison':
@@ -46,32 +48,42 @@ function App() {
     }
     setShowWin(true)
     setGameStart(false)
-
-    timeouts.forEach(element => {
-      clearTimeout(element)
+    
+    intervals.forEach(element => {
+      clearInterval(element)
     });
-    timeouts = []
+    intervals = []
   }
 
   function startTimer() {
     setGameStart(true)
-    timeouts.push(setTimeout(determineWin, GAMETIME * 1000, 'timeout'))
 
     intervals.push(setInterval(() => {
       setTimer((timer) => timer -1)
+      if (pause) {
+        clearInterval(intervals[0])
+        intervals.splice(0, 1)
+        return;
+      }
+      else if (elapsed < 1) {
+        clearInterval(intervals[0])
+        intervals.splice(0, 1)
+        determineWin('timeout')
+        return;
+      }
+      
     }, 1000))
 
     intervals.push(setInterval(() => {
-      setCountGuide((count) => count - 10)
+      if (!pause) {
+        setCountGuide((count) => count - 10)
+      }
     }, GUIDE_PERIOD))
-
-    timeouts.push(setTimeout(() => {
-      intervals.forEach(element => {
-        clearInterval(element)
-      });
-      intervals = []
-    }, GAMETIME * 1000))
   }
+
+  useEffect(() => {
+    elapsed = timer
+  }, [timer])
 
   function reset() {
     setShowWin(false)
@@ -86,6 +98,32 @@ function App() {
       clearInterval(element)
     });
     intervals = []
+  }
+
+  function stopTimer() {
+    pause = !pause
+    setTimer(elapsed)
+    if (!pause) {
+      resume()
+    }
+  }
+
+  function resume() {
+    intervals.push(setInterval(() => {
+      setTimer((timer) => timer -1)
+      if (pause) {
+        console.log(intervals)
+        clearInterval(intervals[1])
+        intervals.splice(1, 1)
+        return;
+      }
+      else if (timer < 0) {
+        clearInterval(intervals[1])
+        intervals.splice(1, 1)
+        return;
+      }
+      
+    }, 1000))
   }
 
   function getWin(player1win, player2win) {
@@ -144,6 +182,10 @@ function App() {
           ＋
         </button>
       </div>
+      <button class={`text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xl px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800`}
+      onClick={() => stopTimer()}>
+        {pause ? 'Resume' : 'Pause'}
+      </button>
       <div className='flex flex-row gap-[2px]'>
       <button className='focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-xl px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800' onClick={() => setCountGuide((count) => count - 20)}>
          Guide has {countGuide} points
